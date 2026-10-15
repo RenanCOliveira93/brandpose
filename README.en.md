@@ -6,7 +6,7 @@
 
 The question behind the project: **can you estimate where each shopper looks in a store using only an ordinary security camera and open source AI models?**
 
-The starting point was [this video about CactusXR (Auki)](https://www.instagram.com/reels/DdtEh0UhCZA/). In it, store cameras produce an attention heatmap over the shelves. This repository tries to reproduce the idea from scratch and documents the path, including what worked and what went wrong.
+The starting point was [this video from CactusXR (Auki)](https://x.com/CactusXR/status/2103355813444321655). In it, store cameras produce an attention heatmap over the shelves. This repository tries to reproduce the idea from scratch and documents the path, including what worked and what went wrong.
 
 > 📹 **Video used in the demo:** [public demo of the ACTi E43A security camera in a US convenience store](https://www.youtube.com/watch?v=-1bRhYjw1qE) (YouTube, 60 s, 1080p, fixed camera). All processing below was done on this video. Footage © ACTi Corporation.
 
