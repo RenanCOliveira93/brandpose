@@ -1,5 +1,7 @@
 # BrandPose: para onde os clientes olham, com uma câmera de segurança comum
 
+🌐 [English](README.en.md) · **Português (Brasil)**
+
 > Projeto pessoal de **Claudio Escudero** ([linkedin.com/in/claudioescudero](https://www.linkedin.com/in/claudioescudero/)). Não é um produto.
 
 A pergunta do projeto: **dá para estimar para onde cada cliente olha numa loja, usando só uma câmera de segurança comum e modelos de IA open source?**
