@@ -12,7 +12,7 @@ O ponto de partida foi [este vídeo sobre o CactusXR (Auki)](https://www.instagr
 
 🎬 **Vídeo de demonstração (42 s):** [assista no YouTube](https://youtu.be/TMUM-IKHqCo) · [baixe na release](https://github.com/escudero/brandpose/releases/latest)
 
-[![Assista ao vídeo de demonstração no YouTube](docs/img/ao_vivo.jpg)](https://youtu.be/TMUM-IKHqCo)
+[![Assista ao vídeo de demonstração no YouTube](docs/img/ao_vivo_play.jpg)](https://youtu.be/TMUM-IKHqCo)
 
 | Olhar estimado quadro a quadro | A cena em 3D (uma única imagem) | Relatório de atenção |
 |---|---|---|
