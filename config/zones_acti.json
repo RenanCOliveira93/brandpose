@@ -1,0 +1,15 @@
+{
+ "_doc": "Zonas da cena ACTi (coordenadas em 1920x1080). Desenhadas à mão sobre clean_plate.png. 'staff_heads' é a região onde a cabeça de quem está na escada (reposição) aparece; essas pessoas são marcadas como equipe e não entram nas métricas.",
+ "zones": [
+  {"name": "Doces e chocolates", "short": "DOCES", "polys": [[[440,410],[1035,255],[1040,520],[960,605],[870,655],[632,840],[602,805],[600,490],[440,470]]]},
+  {"name": "Ponta de gôndola", "short": "PONTA DE GÔNDOLA", "polys": [[[870,640],[1000,585],[1100,595],[1100,1035],[1030,1035],[880,985]]]},
+  {"name": "Mercearia", "short": "MERCEARIA", "polys": [[[1100,560],[1300,450],[1500,350],[1512,390],[1495,700],[1300,900],[1235,1080],[1100,1080]]]},
+  {"name": "Geladeiras de bebidas", "short": "GELADEIRAS", "polys": [[[812,12],[1440,12],[1440,215],[1245,232],[1215,242],[812,242]]]},
+  {"name": "Vinhos e destilados", "short": "VINHOS", "polys": [[[1480,215],[1610,215],[1610,595],[1480,595]], [[1045,200],[1250,195],[1320,240],[1320,420],[1110,530],[1045,520]]]},
+  {"name": "Cervejas", "short": "CERVEJAS", "polys": [[[1612,105],[1920,140],[1920,470],[1612,452]]]},
+  {"name": "Snacks do fundo", "short": "SNACKS", "polys": [[[470,150],[800,100],[952,100],[952,280],[600,372],[470,405]]]},
+  {"name": "Café e sucos", "short": "CAFÉ", "polys": [[[195,45],[470,45],[470,160],[430,200],[330,330],[195,330]], [[464,18],[660,18],[660,145],[464,145]]]},
+  {"name": "Óculos e acessórios", "short": "ÓCULOS", "polys": [[[0,120],[165,120],[165,660],[0,660]]]}
+ ],
+ "staff_heads": [[1290,0],[1640,0],[1640,170],[1290,170]]
+}

@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pt
+.DS_Store
+
+# Saídas e dados são gerados localmente (e incluem material de terceiros)
+outputs/
+data/*
+!data/videos/
+data/videos/*
+!data/videos/SOURCES.md
