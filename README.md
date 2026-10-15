@@ -8,7 +8,9 @@ O ponto de partida foi um vídeo do CactusXR (Auki). Nele, câmeras de loja gera
 
 ## Resultado
 
-🎬 **Vídeo de demonstração (42 s):** [baixe na release mais recente](https://github.com/escudero/brandpose/releases/latest)
+🎬 **Vídeo de demonstração (42 s):** [assista no YouTube](https://youtu.be/TMUM-IKHqCo) · [baixe na release](https://github.com/escudero/brandpose/releases/latest)
+
+[![Assista ao vídeo de demonstração no YouTube](docs/img/ao_vivo.jpg)](https://youtu.be/TMUM-IKHqCo)
 
 | Olhar estimado quadro a quadro | A cena em 3D (uma única imagem) | Relatório de atenção |
 |---|---|---|
