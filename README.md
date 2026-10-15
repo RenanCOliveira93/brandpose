@@ -6,6 +6,8 @@ A pergunta do projeto: **dá para estimar para onde cada cliente olha numa loja,
 
 O ponto de partida foi [este vídeo sobre o CactusXR (Auki)](https://www.instagram.com/reels/DdtEh0UhCZA/). Nele, câmeras de loja geram um mapa de calor de atenção nas prateleiras. Este repositório tenta reproduzir a ideia do zero e documenta o caminho, com o que funcionou e o que deu errado.
 
+> 📹 **Vídeo usado na demonstração:** [demonstração pública da câmera de segurança ACTi E43A numa loja de conveniência nos EUA](https://www.youtube.com/watch?v=-1bRhYjw1qE) (YouTube, 60 s, 1080p, câmera fixa). Todo o processamento abaixo foi feito sobre esse vídeo. As imagens são da ACTi Corporation.
+
 ## Resultado
 
 🎬 **Vídeo de demonstração (42 s):** [assista no YouTube](https://youtu.be/TMUM-IKHqCo) · [baixe na release](https://github.com/escudero/brandpose/releases/latest)
