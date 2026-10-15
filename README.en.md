@@ -12,9 +12,9 @@ The starting point was [this video about CactusXR (Auki)](https://www.instagram.
 
 ## Result
 
-🎬 **Demo video (42 s):** [watch on YouTube](https://youtu.be/TMUM-IKHqCo) · [download from the release](https://github.com/escudero/brandpose/releases/latest)
+🎬 **Demo video (42 s):** [watch on YouTube](https://youtu.be/w3M8PlVcndU) · [download from the release](https://github.com/escudero/brandpose/releases/latest)
 
-[![Watch the demo video on YouTube](docs/img/ao_vivo_play.jpg)](https://youtu.be/TMUM-IKHqCo)
+[![Watch the demo video on YouTube](docs/img/ao_vivo_play.jpg)](https://youtu.be/w3M8PlVcndU)
 
 | Gaze estimated frame by frame | The scene in 3D (from a single image) | Attention report |
 |---|---|---|
