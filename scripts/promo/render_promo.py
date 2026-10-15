@@ -37,6 +37,73 @@ EDGE = 32  # olhar a menos de 32 px da borda é tratado como "fora da imagem"
 CREDITS = {"title": "BRANDPOSE", "sub": "ATTENTION ANALYTICS  ·  CAM 01", "author": None, "link": None,
            "tagline": "Um projeto pessoal sobre a atenção do cliente no varejo", "watermark": False}
 
+# Textos na tela, por idioma (main() escolhe com --lang). As chaves com {} são preenchidas com .format().
+TEXTS = {
+    "pt": {
+        "dec": ",", "thousands": ".",
+        "staff": "EQUIPE", "mode_live": "ANÁLISE QUADRO A QUADRO", "mode_3d": "MODO 3D", "mode_ff": "AVANÇO RÁPIDO",
+        "scene": "CENA", "panel": "ATENÇÃO POR ZONA", "panel_foot": "{n} olhares estimados  ·  {now} pessoas agora",
+        "raw1": "Toda loja tem câmeras.", "raw2": "Mas elas só gravam.", "scan": "MAPEANDO CENA  ·  POSE  ·  OLHAR",
+        "scan_title": "Até agora.", "rewind": "VOLTANDO AO INÍCIO, AGORA COM IA",
+        "live1": "A IA estima para onde cada pessoa olha",
+        "live1_sub": "10 vezes por segundo  ·  com uma câmera de segurança comum",
+        "live2": "As prateleiras mais olhadas acendem",
+        "live2_sub": "o calor soma o tempo de atenção de cada cliente em cada zona",
+        "frozen": "TEMPO CONGELADO", "3d": "A loja em 3D",
+        "3d_sub": "profundidade estimada por IA a partir de uma única imagem",
+        "ff": "{s} segundos de loja", "ff_sub": "o calor de atenção continua acumulando",
+        "report": "O que mais chamou a atenção",
+        "report_sub": "{s} s de vídeo  ·  uma câmera  ·  nenhum sensor extra",
+        "ranking": "RANKING DE ATENÇÃO", "rank_row": "{s} s de atenção  ·  {n} pessoas",
+        "kpi_gazes": "olhares estimados", "kpi_secs": "segundos de atenção", "kpi_zones": "zonas com atenção",
+        "notes": ["Equipe de reposição excluída da contagem", "Olhares para fora da imagem não contam",
+                  "Fragmentos da mesma pessoa unificados"],
+        "end_tagline": "Atenção do cliente, em dados.",
+        "end_credits": "Protótipo  ·  Gaze-LLE + YOLO11 + Depth Anything V2  ·  vídeo de demonstração ACTi",
+        "created_by": "CRIADO POR",
+        "personal_title": "ATENÇÃO DO CLIENTE", "personal_sub": "PROJETO PESSOAL  ·  CAM 01",
+        "zones": {},  # os nomes do zones.json já estão em português
+    },
+    "en": {
+        "dec": ".", "thousands": ",",
+        "staff": "STAFF", "mode_live": "FRAME-BY-FRAME ANALYSIS", "mode_3d": "3D MODE", "mode_ff": "FAST FORWARD",
+        "scene": "SCENE", "panel": "ATTENTION BY ZONE", "panel_foot": "{n} estimated gazes  ·  {now} people now",
+        "raw1": "Every store has cameras.", "raw2": "But they only record.", "scan": "MAPPING SCENE  ·  POSE  ·  GAZE",
+        "scan_title": "Until now.", "rewind": "BACK TO THE START, NOW WITH AI",
+        "live1": "AI estimates where each person looks",
+        "live1_sub": "10 times per second  ·  with an ordinary security camera",
+        "live2": "The most-viewed shelves light up",
+        "live2_sub": "the heat adds up each shopper's attention time in each zone",
+        "frozen": "TIME FROZEN", "3d": "The store in 3D",
+        "3d_sub": "depth estimated by AI from a single image",
+        "ff": "{s} seconds in the store", "ff_sub": "the attention heat keeps building up",
+        "report": "What drew the most attention",
+        "report_sub": "{s} s of video  ·  one camera  ·  no extra sensors",
+        "ranking": "ATTENTION RANKING", "rank_row": "{s} s of attention  ·  {n} people",
+        "kpi_gazes": "estimated gazes", "kpi_secs": "seconds of attention", "kpi_zones": "zones with attention",
+        "notes": ["Restocking staff excluded from the count", "Gazes leaving the frame do not count",
+                  "Fragments of the same person merged"],
+        "end_tagline": "Shopper attention, in data.",
+        "end_credits": "Prototype  ·  Gaze-LLE + YOLO11 + Depth Anything V2  ·  ACTi demo video",
+        "created_by": "CREATED BY",
+        "personal_title": "SHOPPER ATTENTION", "personal_sub": "PERSONAL PROJECT  ·  CAM 01",
+        "tagline": "A personal project on shopper attention in retail",
+        # "short" do zones.json -> (rótulo curto, nome completo)
+        "zones": {"DOCES": ("CANDY", "Candy and chocolate"), "PONTA DE GÔNDOLA": ("ENDCAP", "Endcap"),
+                  "MERCEARIA": ("GROCERY", "Grocery"), "GELADEIRAS": ("COOLERS", "Beverage coolers"),
+                  "VINHOS": ("WINE", "Wine and spirits"), "CERVEJAS": ("BEER", "Beer"),
+                  "SNACKS": ("SNACKS", "Back-wall snacks"), "CAFÉ": ("COFFEE", "Coffee and juice"),
+                  "ÓCULOS": ("SUNGLASSES", "Sunglasses and accessories")},
+    },
+}
+TX = TEXTS["pt"]
+
+
+def zone_text(zone, key="short"):
+    """Nome da zona no idioma do vídeo (a lógica continua usando o "short" original)."""
+    tr = TX["zones"].get(zone["short"])
+    return zone[key] if tr is None else tr[0 if key == "short" else 1]
+
 # Cores (BGR para OpenCV)
 CYAN = np.array([255, 225, 70], np.float32)
 CYAN_DIM = np.array([170, 140, 40], np.float32)
@@ -88,12 +155,12 @@ def fade(t, t0, t1, fin=0.35, fout=0.35):
     return min(ease_out((t - t0) / fin) if fin > 0 else 1.0, ease_out((t1 - t) / fout) if fout > 0 else 1.0)
 
 
-def br_num(n):
-    return f"{int(round(n)):,}".replace(",", ".")
+def fmt_int(n):
+    return f"{int(round(n)):,}".replace(",", TX["thousands"])
 
 
-def br_dec(x, nd=1):
-    return f"{x:.{nd}f}".replace(".", ",")
+def fmt_dec(x, nd=1):
+    return f"{x:.{nd}f}".replace(".", TX["dec"])
 
 
 def glow(img_u8, sigma=5.0, scale=4):
@@ -597,7 +664,7 @@ class Scene:
                 if opts.get("labels", True):
                     dw = self.d.dwell_at(tid, f)
                     secs = dw[1] if dw and dw[0] == z else 0.0
-                    target_label(tl, (gx, gy), self.d.zones[z]["short"], secs, a)
+                    target_label(tl, (gx, gy), zone_text(self.d.zones[z]), secs, a)
         if opts.get("zones", True) and active_z:
             # A zona que está sendo olhada ganha um brilho suave
             q = sum(self.d.zone_q[z] for z in active_z)
@@ -664,7 +731,7 @@ def draw_beam(ov, o, t, a, phase):
 def person_tag(tl, p, staff, number):
     x1, y1, x2, y2 = p["head"]
     cx = (x1 + x2) / 2
-    label = "EQUIPE" if staff else f"#{number or 0:02d}"
+    label = TX["staff"] if staff else f"#{number or 0:02d}"
     fnt = font("monob", 15)
     wtxt = ImageDraw.Draw(tl.im).textlength(label, font=fnt)
     bx0, by1 = cx - wtxt / 2 - 8, y1 - 10
@@ -679,7 +746,7 @@ def person_tag(tl, p, staff, number):
 def target_label(tl, xy, name, secs, a):
     x, y = xy
     fnt = font("demi", 17)
-    txt = f"{name}  ·  {br_dec(secs)} s" if secs >= 0.3 else name
+    txt = f"{name}  ·  {fmt_dec(secs)} s" if secs >= 0.3 else name
     wtxt = ImageDraw.Draw(tl.im).textlength(txt, font=fnt)
     bx0, by0 = x + 26, y - 44
     if bx0 + wtxt + 20 > W - 10:
@@ -701,13 +768,13 @@ def hud_live(tl, img, t, src_t, mode="live", badge=None):
     tl.text((50, 74), CREDITS["sub"], font("mono", 15), RGB_CYAN, track=2)
     pulse = 0.55 + 0.45 * math.sin(t * 2 * math.pi * 0.9)
     # Não é tempo real (o Mac processa ~3 quadros/s), então não dizemos "ao vivo"
-    label = {"live": "ANÁLISE QUADRO A QUADRO", "3d": "MODO 3D", "ff": "AVANÇO RÁPIDO"}[mode]
+    label = TX["mode_" + mode]
     wl = tl.text((W - 48, 40), label, font("monob", 18), RGB_WHITE, anchor="ra", track=2)
     if mode == "live":
         cv2.circle(img, (int(W - 48 - wl - 22), 52), 7, (60, 60, 255), -1, cv2.LINE_AA)
         img[45:60, int(W - 48 - wl - 30):int(W - 48 - wl - 14)] = (
             img[45:60, int(W - 48 - wl - 30):int(W - 48 - wl - 14)] * (0.5 + 0.5 * pulse)).astype(np.uint8)
-    tl.text((W - 48, 74), f"CENA {int(src_t // 60):02d}:{int(src_t % 60):02d}  ·  1080p  ·  30 fps",
+    tl.text((W - 48, 74), f"{TX['scene']} {int(src_t // 60):02d}:{int(src_t % 60):02d}  ·  1080p  ·  30 fps",
             font("mono", 15), RGB_DIM, anchor="ra", track=1)
     if badge:
         tl.box((W / 2 - 70, 30, W / 2 + 70, 74), fill=(255, 170, 50, 230), radius=8)
@@ -748,21 +815,21 @@ def zone_panel(tl, img, d, f, n_now, alpha=1.0, x0=1470, y0=690, x1=1880, y1=104
     if alpha <= 0:
         return
     glass(img, (x0, y0, x1, y1))
-    tl.text((x0 + 22, y0 + 20), "ATENÇÃO POR ZONA", font("monob", 16), RGB_CYAN, a=alpha, track=2)
+    tl.text((x0 + 22, y0 + 20), TX["panel"], font("monob", 16), RGB_CYAN, a=alpha, track=2)
     vals = d.cum_zone[min(f, d.n_frames - 1)]
     total = vals.sum()
     order = np.argsort(-vals)[:5]
     for r, zi in enumerate(order):
         yy = y0 + 60 + r * 52
         share = vals[zi] / total if total > 0 else 0.0
-        tl.text((x0 + 22, yy), d.zones[zi]["short"], font("demi", 19), RGB_WHITE, a=alpha)
+        tl.text((x0 + 22, yy), zone_text(d.zones[zi]), font("demi", 19), RGB_WHITE, a=alpha)
         tl.text((x1 - 22, yy - 4), f"{int(round(share * 100))}%", font("num", 30), RGB_AMBER, a=alpha, anchor="ra")
         bw = x1 - x0 - 44
         cv2.rectangle(img, (x0 + 22, yy + 30), (x0 + 22 + bw, yy + 35), (70, 55, 25), -1)
         if share > 0:
             cv2.rectangle(img, (x0 + 22, yy + 30), (x0 + 22 + int(bw * share), yy + 35), AMBER, -1)
     cnt = d.cum_count[min(f, d.n_frames - 1)]
-    tl.text((x0 + 22, y1 - 34), f"{br_num(cnt)} olhares estimados  ·  {n_now} pessoas agora",
+    tl.text((x0 + 22, y1 - 34), TX["panel_foot"].format(n=fmt_int(cnt), now=n_now),
             font("mono", 14), RGB_DIM, a=alpha)
 
 
@@ -830,7 +897,7 @@ class Cloud:
                 win = depth[int(max(0, gy - 5)):int(gy + 6), int(max(0, gx - 5)):int(gx + 6)]
                 tz = float(np.median(win))
                 z_id = data.zone_for(freeze_f, gx, gy)
-                tgt = (self.unproject(gx, gy, tz), data.zones[z_id]["short"] if z_id >= 0 else None)
+                tgt = (self.unproject(gx, gy, tz), zone_text(data.zones[z_id]) if z_id >= 0 else None)
             self.people.append({"id": tid, "head": self.unproject(hx, hy, hz), "kp": K3, "kc": kc,
                                 "tgt": tgt, "staff": tid in data.staff})
 
@@ -1031,7 +1098,7 @@ class Renderer:
         img[:, :900] = (img[:, :900].astype(np.float32) * (1 - g)).astype(np.uint8)
         a1 = fade(lt, 0.25, 2.65, 0.5, 0.35)
         a2 = fade(lt, 2.85, 5.2, 0.5, 0.0)
-        for a, s, t0 in ((a1, "Toda loja tem câmeras.", 0.25), (a2, "Mas elas só gravam.", 2.85)):
+        for a, s, t0 in ((a1, TX["raw1"], 0.25), (a2, TX["raw2"], 2.85)):
             if a > 0:
                 dy = (1 - ease_out((lt - t0) / 0.7)) * 24
                 tl.text((90, 470 + dy), s, font("bold", 76), RGB_WHITE, a=a, shadow=True)
@@ -1056,7 +1123,7 @@ class Renderer:
             cv2.line(line, (0, y), (W, y), (255, 245, 170), 3)
             img = np.clip(img.astype(np.float32) + line + glow(line, 6, 4) * 2.2, 0, 255).astype(np.uint8)
             tl2 = TextLayer()
-            tl2.text((W - 60, y - 34), "MAPEANDO CENA  ·  POSE  ·  OLHAR", font("monob", 16), RGB_CYAN, anchor="ra", track=2)
+            tl2.text((W - 60, y - 34), TX["scan"], font("monob", 16), RGB_CYAN, anchor="ra", track=2)
             img = tl2.composite(img)
         # Só mostra o texto da camada ao vivo acima da linha
         arr = np.asarray(tl.im).copy()
@@ -1064,7 +1131,7 @@ class Renderer:
         tl.im = Image.fromarray(arr)
         hud_live(tl, img, t, src) if y > 140 else None
         a = fade(lt, 0.2, dur, 0.4, 0.0)
-        tl.text((90, 470), "Até agora.", font("bold", 76), RGB_WHITE, a=a, shadow=True)
+        tl.text((90, 470), TX["scan_title"], font("bold", 76), RGB_WHITE, a=a, shadow=True)
         return tl.composite(img)
 
     # Rebobina até o início para mostrar a mesma cena, agora com IA
@@ -1076,7 +1143,7 @@ class Renderer:
             y = int(rng.integers(140, H - 140))
             img[y:y + 3] = np.clip(img[y:y + 3].astype(np.int16) + 70, 0, 255).astype(np.uint8)
         hud_live(tl, img, t, src, mode="ff", badge="◀◀ 9×")
-        tl.text((W / 2, 150), "VOLTANDO AO INÍCIO, AGORA COM IA", font("monob", 22), RGB_CYAN, anchor="ma", track=4)
+        tl.text((W / 2, 150), TX["rewind"], font("monob", 22), RGB_CYAN, anchor="ma", track=4)
         return tl.composite(img)
 
     def r_live(self, t, lt, dur, f, src):
@@ -1084,10 +1151,8 @@ class Renderer:
         hud_live(tl, img, t, src)
         zone_panel(tl, img, self.d, f, n_now)
         half = dur / 2
-        caption(tl, lt, 0.2, half - 0.1, "A IA estima para onde cada pessoa olha",
-                "10 vezes por segundo  ·  com uma câmera de segurança comum")
-        caption(tl, lt, half + 0.1, dur - 0.15, "As prateleiras mais olhadas acendem",
-                "o calor soma o tempo de atenção de cada cliente em cada zona")
+        caption(tl, lt, 0.2, half - 0.1, TX["live1"], TX["live1_sub"])
+        caption(tl, lt, half + 0.1, dur - 0.15, TX["live2"], TX["live2_sub"])
         return tl.composite(img)
 
     def ensure_cloud(self):
@@ -1112,9 +1177,8 @@ class Renderer:
         img = np.clip(img + 255 * flash, 0, 255).astype(np.uint8)
         hud_live(tl, img, t, src, mode="3d")
         a = fade(lt, 0.15, 2.4, 0.2, 0.4)
-        tl.text((W / 2, 150), "TEMPO CONGELADO", font("monob", 22), RGB_CYAN, a=a, anchor="ma", track=6)
-        caption(tl, lt, 1.6, dur - 1.2, "A loja em 3D",
-                "profundidade estimada por IA a partir de uma única imagem")
+        tl.text((W / 2, 150), TX["frozen"], font("monob", 22), RGB_CYAN, a=a, anchor="ma", track=6)
+        caption(tl, lt, 1.6, dur - 1.2, TX["3d"], TX["3d_sub"])
         return tl.composite(img)
 
     def r_ff(self, t, lt, dur, f, src):
@@ -1122,8 +1186,7 @@ class Renderer:
         speed = (self.src_end - self.tl.freeze_src) / dur
         hud_live(tl, img, t, src, mode="ff", badge=f"▶▶ {int(round(speed))}×")
         zone_panel(tl, img, self.d, f, n_now)
-        caption(tl, lt, 0.2, dur - 0.1, f"{int(round(self.src_end))} segundos de loja",
-                "o calor de atenção continua acumulando")
+        caption(tl, lt, 0.2, dur - 0.1, TX["ff"].format(s=int(round(self.src_end))), TX["ff_sub"])
         return tl.composite(img)
 
     def r_report(self, t, lt, dur, f, src):
@@ -1147,8 +1210,8 @@ class Renderer:
         total = vals.sum()
         order = [int(i) for i in np.argsort(-vals) if vals[i] > 0][:6]
         a_t = fade(lt, 0.6, dur, 0.5, 0.0)
-        tl.text((70, 52), "O que mais chamou a atenção", font("bold", 54), RGB_WHITE, a=a_t)
-        tl.text((72, 124), f"{int(round(self.src_end))} s de vídeo  ·  uma câmera  ·  nenhum sensor extra",
+        tl.text((70, 52), TX["report"], font("bold", 54), RGB_WHITE, a=a_t)
+        tl.text((72, 124), TX["report_sub"].format(s=int(round(self.src_end))),
                 font("mono", 18), RGB_DIM, a=a_t, track=1)
         # Marcadores numerados nas três zonas mais olhadas
         for r, zi in enumerate(order[:3]):
@@ -1161,7 +1224,7 @@ class Renderer:
             tl.text((px, py), str(r + 1), font("num", 30), (20, 12, 0), a=a, anchor="mm")
         # Ranking à direita
         px0 = 1340
-        tl.text((px0, 196), "RANKING DE ATENÇÃO", font("monob", 18), RGB_CYAN, a=a_t, track=3)
+        tl.text((px0, 196), TX["ranking"], font("monob", 18), RGB_CYAN, a=a_t, track=3)
         for r, zi in enumerate(order):
             a = fade(lt, 1.0 + r * 0.15, dur, 0.4, 0.0)
             if a <= 0:
@@ -1170,28 +1233,26 @@ class Renderer:
             share = vals[zi] / total
             grow = ease_out((lt - 1.0 - r * 0.15) / 1.1)
             tl.text((px0, yy), f"{r + 1}", font("num", 40), RGB_AMBER if r < 3 else RGB_DIM, a=a)
-            tl.text((px0 + 46, yy + 2), self.d.zones[zi]["name"], font("demi", 26), RGB_WHITE, a=a)
+            tl.text((px0 + 46, yy + 2), zone_text(self.d.zones[zi], "name"), font("demi", 26), RGB_WHITE, a=a)
             tl.text((W - 70, yy - 2), f"{int(round(share * 100 * grow))}%", font("num", 44), RGB_AMBER, a=a, anchor="ra")
             bw = W - 70 - (px0 + 46)
             cv2.rectangle(img, (px0 + 46, yy + 48), (px0 + 46 + bw, yy + 54), (60, 48, 22), -1)
             cv2.rectangle(img, (px0 + 46, yy + 48), (px0 + 46 + int(bw * share * grow), yy + 54), AMBER, -1)
-            tl.text((px0 + 46, yy + 62), f"{br_dec(vals[zi])} s de atenção  ·  {self.d.viewers.get(zi, 0)} pessoas",
+            tl.text((px0 + 46, yy + 62), TX["rank_row"].format(s=fmt_dec(vals[zi]), n=self.d.viewers.get(zi, 0)),
                     font("mono", 14), RGB_DIM, a=a)
         # Indicadores
         kp = ease_out((lt - 2.2) / 1.6)
         a_k = fade(lt, 2.2, dur, 0.5, 0.0)
-        kpis = [(br_num(self.d.cum_count[-1] * kp), "olhares estimados"),
-                (br_dec(total * kp), "segundos de atenção"),
-                (str(int((vals > 0).sum())), "zonas com atenção")]
+        kpis = [(fmt_int(self.d.cum_count[-1] * kp), TX["kpi_gazes"]),
+                (fmt_dec(total * kp), TX["kpi_secs"]),
+                (str(int((vals > 0).sum())), TX["kpi_zones"])]
         for i, (v, lab) in enumerate(kpis):
             xx = 70 + i * 420
             tl.text((xx, 905), v, font("num", 84), RGB_WHITE, a=a_k)
             tl.text((xx + 4, 1000), lab.upper(), font("mono", 16), RGB_CYAN, a=a_k, track=2)
         # Notas de método (o que entra e o que não entra na conta)
         a_n = fade(lt, 3.0, dur, 0.6, 0.0)
-        for i, s in enumerate(["Equipe de reposição excluída da contagem",
-                               "Olhares para fora da imagem não contam",
-                               "Fragmentos da mesma pessoa unificados"]):
+        for i, s in enumerate(TX["notes"]):
             tl.text((px0, 880 + i * 30), "·  " + s, font("mono", 15), RGB_DIM, a=a_n)
         return tl.composite(img)
 
@@ -1208,9 +1269,9 @@ class Renderer:
         half = int(330 * ease_out((lt - 0.3) / 1.0))
         cv2.line(line, (W // 2 - half, 600), (W // 2 + half, 600), tuple(int(c * a) for c in AMBER), 3)
         img = np.clip(img.astype(np.float32) + line + glow(line, 6, 4) * 2.0, 0, 255).astype(np.uint8)
-        tl.text((W / 2, 630), "Atenção do cliente, em dados.", font("medium", 40), (220, 230, 238),
+        tl.text((W / 2, 630), TX["end_tagline"], font("medium", 40), (220, 230, 238),
                 a=fade(lt, 0.6, dur, 0.6, 0.6), anchor="ma")
-        tl.text((W / 2, H - 70), "Protótipo  ·  Gaze-LLE + YOLO11 + Depth Anything V2  ·  vídeo de demonstração ACTi",
+        tl.text((W / 2, H - 70), TX["end_credits"],
                 font("mono", 15), RGB_DIM, a=fade(lt, 0.9, dur, 0.6, 0.6), anchor="ma", track=1)
         return tl.composite(img)
 
@@ -1226,7 +1287,7 @@ class Renderer:
         a_line = fade(lt, 0.5, dur, 0.3, 0.6)
         cv2.line(line, (W // 2 - half, 440), (W // 2 + half, 440), tuple(int(c * a_line) for c in AMBER), 3)
         img = np.clip(img.astype(np.float32) + line + glow(line, 6, 4) * 2.0, 0, 255).astype(np.uint8)
-        tl.text((W / 2, 490), "CRIADO POR", font("mono", 22), RGB_CYAN, a=fade(lt, 0.8, dur, 0.5, 0.6),
+        tl.text((W / 2, 490), TX["created_by"], font("mono", 22), RGB_CYAN, a=fade(lt, 0.8, dur, 0.5, 0.6),
                 anchor="ma", track=8)
         track = int(30 - 18 * ease_out((lt - 1.0) / 1.6))
         tl.text((W / 2, 540), CREDITS["author"].upper(), font("heavy", 100), RGB_WHITE,
@@ -1249,10 +1310,14 @@ def main():
     ap.add_argument("--author-link", default="")
     ap.add_argument("--credits", choices=["endcard", "watermark"], default="endcard",
                     help="com --author: tela final com o autor, ou só marca d'água no rodapé")
+    ap.add_argument("--lang", choices=sorted(TEXTS), default="pt", help="idioma dos textos na tela")
     args = ap.parse_args()
 
+    TX.update(TEXTS[args.lang])
+    if "tagline" in TX:
+        CREDITS["tagline"] = TX["tagline"]
     if args.author:
-        CREDITS.update(title="ATENÇÃO DO CLIENTE", sub="PROJETO PESSOAL  ·  CAM 01",
+        CREDITS.update(title=TX["personal_title"], sub=TX["personal_sub"],
                        author=args.author, link=args.author_link or None,
                        watermark=args.credits == "watermark")
     r = Renderer(args.data_dir, args.freeze)
