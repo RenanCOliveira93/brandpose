@@ -14,11 +14,11 @@ The starting point was [this video about CactusXR (Auki)](https://www.instagram.
 
 🎬 **Demo video (42 s):** [watch on YouTube](https://youtu.be/w3M8PlVcndU) · [download from the release](https://github.com/escudero/brandpose/releases/latest)
 
-[![Watch the demo video on YouTube](docs/img/ao_vivo_play.jpg)](https://youtu.be/w3M8PlVcndU)
+[![Watch the demo video on YouTube](docs/img/ao_vivo_play_en.jpg)](https://youtu.be/w3M8PlVcndU)
 
 | Gaze estimated frame by frame | The scene in 3D (from a single image) | Attention report |
 |---|---|---|
-| ![Gaze beams and heat on the shelves](docs/img/ao_vivo.jpg) | ![3D point cloud of the store](docs/img/loja_3d.jpg) | ![Attention ranking by zone](docs/img/relatorio.jpg) |
+| ![Gaze beams and heat on the shelves](docs/img/ao_vivo_en.jpg) | ![3D point cloud of the store](docs/img/loja_3d_en.jpg) | ![Attention ranking by zone](docs/img/relatorio_en.jpg) |
 
 Over 60 s from a real security camera in a convenience store:
 
