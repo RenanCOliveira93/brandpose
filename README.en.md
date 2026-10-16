@@ -117,6 +117,8 @@ Videos, extracted data and outputs are kept out of git (see `.gitignore`) and ar
 
 ## Credits and licenses
 
+BrandPose's code is released under the [MIT License](LICENSE). Third-party libraries, model weights and footage keep their own licenses, listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
 - Video footage: public demo of the ACTi E43A camera, [on YouTube](https://www.youtube.com/watch?v=-1bRhYjw1qE). Footage © ACTi Corporation.
 - [Gaze-LLE](https://github.com/fkryan/gazelle) (MIT) and [DINOv2](https://github.com/facebookresearch/dinov2) (Apache-2.0).
 - [Ultralytics YOLO11](https://github.com/ultralytics/ultralytics) (**AGPL-3.0**).

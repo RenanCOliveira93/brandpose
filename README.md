@@ -117,6 +117,8 @@ Os vídeos, os dados extraídos e as saídas ficam fora do git (veja `.gitignore
 
 ## Créditos e licenças
 
+O código do BrandPose está sob a [licença MIT](LICENSE). As bibliotecas, os pesos dos modelos e as imagens de terceiros mantêm as próprias licenças, listadas em [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
 - Imagens do vídeo: demonstração pública da câmera ACTi E43A, [no YouTube](https://www.youtube.com/watch?v=-1bRhYjw1qE). Os direitos das imagens são da ACTi Corporation.
 - [Gaze-LLE](https://github.com/fkryan/gazelle) (MIT) e [DINOv2](https://github.com/facebookresearch/dinov2) (Apache-2.0).
 - [Ultralytics YOLO11](https://github.com/ultralytics/ultralytics) (**AGPL-3.0**).
