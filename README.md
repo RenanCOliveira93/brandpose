@@ -1,126 +1,126 @@
-# BrandPose: para onde os clientes olham, com uma câmera de segurança comum
+# BrandPose: where shoppers look, from an ordinary security camera
 
-🌐 [English](README.en.md) · **Português (Brasil)**
+🌐 **English** · [Português (Brasil)](README.pt-BR.md)
 
-> Projeto pessoal de **Claudio Escudero** ([linkedin.com/in/claudioescudero](https://www.linkedin.com/in/claudioescudero/)). Não é um produto.
+> Personal project by **Claudio Escudero** ([linkedin.com/in/claudioescudero](https://www.linkedin.com/in/claudioescudero/)). Not a product.
 
-A pergunta do projeto: **dá para estimar para onde cada cliente olha numa loja, usando só uma câmera de segurança comum e modelos de IA open source?**
+The question behind the project: **can you estimate where each shopper looks in a store using only an ordinary security camera and open source AI models?**
 
-O ponto de partida foi [este vídeo do CactusXR (Auki)](https://x.com/CactusXR/status/2103355813444321655). Nele, câmeras de loja geram um mapa de calor de atenção nas prateleiras. Este repositório tenta reproduzir a ideia do zero e documenta o caminho, com o que funcionou e o que deu errado.
+The starting point was [this video from CactusXR (Auki)](https://x.com/CactusXR/status/2103355813444321655). In it, store cameras produce an attention heatmap over the shelves. This repository tries to reproduce the idea from scratch and documents the path, including what worked and what went wrong.
 
-> 📹 **Vídeo usado na demonstração:** [demonstração pública da câmera de segurança ACTi E43A numa loja de conveniência nos EUA](https://www.youtube.com/watch?v=-1bRhYjw1qE) (YouTube, 60 s, 1080p, câmera fixa). Todo o processamento abaixo foi feito sobre esse vídeo. As imagens são da ACTi Corporation.
+> 📹 **Video used in the demo:** [public demo of the ACTi E43A security camera in a US convenience store](https://www.youtube.com/watch?v=-1bRhYjw1qE) (YouTube, 60 s, 1080p, fixed camera). All processing below was done on this video. Footage © ACTi Corporation.
 
-## Resultado
+## Result
 
-🎬 **Vídeo de demonstração (42 s):** [assista no YouTube](https://youtu.be/TMUM-IKHqCo) · [baixe na release](https://github.com/escudero/brandpose/releases/latest)
+🎬 **Demo video (42 s):** [watch on YouTube](https://youtu.be/w3M8PlVcndU) · [download from the release](https://github.com/escudero/brandpose/releases/latest)
 
-[![Assista ao vídeo de demonstração no YouTube](docs/img/ao_vivo_play.jpg)](https://youtu.be/TMUM-IKHqCo)
+[![Watch the demo video on YouTube](docs/img/ao_vivo_play_en.jpg)](https://youtu.be/w3M8PlVcndU)
 
-| Olhar estimado quadro a quadro | A cena em 3D (uma única imagem) | Relatório de atenção |
+| Gaze estimated frame by frame | The scene in 3D (from a single image) | Attention report |
 |---|---|---|
-| ![Feixes do olhar e calor nas prateleiras](docs/img/ao_vivo.jpg) | ![Nuvem de pontos 3D da loja](docs/img/loja_3d.jpg) | ![Ranking de atenção por zona](docs/img/relatorio.jpg) |
+| ![Gaze beams and heat on the shelves](docs/img/ao_vivo_en.jpg) | ![3D point cloud of the store](docs/img/loja_3d_en.jpg) | ![Attention ranking by zone](docs/img/relatorio_en.jpg) |
 
-Em 60 s de uma câmera de segurança real numa loja de conveniência:
+Over 60 s from a real security camera in a convenience store:
 
-| Zona | Atenção | % | Pessoas |
+| Zone | Attention | % | People |
 |---|---|---|---|
-| Doces e chocolates | 16,1 s | 32% | 8 |
-| Óculos e acessórios | 15,8 s | 31% | 10 |
-| Snacks do fundo | 7,2 s | 14% | 7 |
-| Café e sucos | 2,8 s | 5% | 6 |
-| Ponta de gôndola | 2,5 s | 5% | 2 |
+| Candy and chocolate | 16.1 s | 32% | 8 |
+| Sunglasses and accessories | 15.8 s | 31% | 10 |
+| Back-wall snacks | 7.2 s | 14% | 7 |
+| Coffee and juice | 2.8 s | 5% | 6 |
+| Endcap | 2.5 s | 5% | 2 |
 
-São 797 olhares estimados, 17 clientes e 9 zonas com atenção. Esses números são **estimativas do modelo**, sem gabarito manual (veja as limitações).
+That is 797 estimated gazes, 17 shoppers and 9 zones with attention. These numbers are **model estimates**, with no manual ground truth (see the limitations).
 
-## Como funciona
+## How it works
 
 ```mermaid
 flowchart LR
-    V["Vídeo de câmera fixa"] --> P["YOLO11-pose<br/>pessoas + esqueleto + ID"]
-    V --> S["YOLO11-seg<br/>silhuetas"]
-    P --> G["Gaze-LLE ViT-L<br/>recorte por pessoa<br/>para onde olha"]
-    G --> R["Regras de atenção<br/>borda · pessoas · equipe · zonas"]
+    V["Fixed-camera video"] --> P["YOLO11-pose<br/>people + skeleton + ID"]
+    V --> S["YOLO11-seg<br/>silhouettes"]
+    P --> G["Gaze-LLE ViT-L<br/>per-person crop<br/>where they look"]
+    G --> R["Attention rules<br/>edge · people · staff · zones"]
     S --> R
-    V --> D["Depth Anything V2<br/>profundidade em metros"]
-    R --> X["Render: calor, ranking,<br/>3D e trilha sintetizada"]
+    V --> D["Depth Anything V2<br/>depth in meters"]
+    R --> X["Render: heat, ranking,<br/>3D and synthesized soundtrack"]
     D --> X
-    X --> MP4["Vídeo + relatório"]
+    X --> MP4["Video + report"]
 ```
 
-1. **Pessoas:** o YOLO11-pose acha cada pessoa, os 17 pontos do corpo e um ID que segue a pessoa quadro a quadro (ByteTrack, em todos os quadros).
-2. **Olhar:** o [Gaze-LLE](https://github.com/fkryan/gazelle) (CVPR 2025) recebe um **recorte quadrado em volta de cada cabeça** e devolve um mapa de calor de para onde a pessoa olha, 10 vezes por segundo.
-3. **Regras:** o ponto do olhar é suavizado no tempo e atribuído a uma zona da loja. Olhares que não são atenção em prateleira são descartados (veja abaixo).
-4. **3D:** o Depth Anything V2 estima a profundidade de um quadro, que vira uma nuvem de pontos com cerca de 500 mil pontos.
-5. **Vídeo:** OpenCV, NumPy e Pillow desenham cada quadro, o FFmpeg codifica, e a trilha sonora é sintetizada em código.
+1. **People:** YOLO11-pose finds each person, the 17 body keypoints and an ID that follows the person frame by frame (ByteTrack, on every frame).
+2. **Gaze:** [Gaze-LLE](https://github.com/fkryan/gazelle) (CVPR 2025) takes a **square crop around each head** and returns a heatmap of where the person is looking, 10 times per second.
+3. **Rules:** the gaze point is smoothed over time and assigned to a store zone. Gazes that are not shelf attention are discarded (see below).
+4. **3D:** Depth Anything V2 estimates the depth of one frame, which becomes a point cloud of about 500 thousand points.
+5. **Video:** OpenCV, NumPy and Pillow draw each frame, FFmpeg encodes it, and the soundtrack is synthesized in code.
 
-O detalhe de cada etapa, com bibliotecas, versões, formatos e tempos, está em [`docs/arquitetura.md`](docs/arquitetura.md).
+Details of each stage, with libraries, versions, formats and timings, are in [`docs/arquitetura.md`](docs/arquitetura.md) (in Portuguese).
 
-## O que aprendi no caminho
+## What I learned along the way
 
-| Descoberta | Evidência | O que mudou |
+| Finding | Evidence | What changed |
 |---|---|---|
-| Comprimir o quadro inteiro para 448×448 cega o modelo | A cabeça de 58 px chegava ao modelo com cerca de 13×23 px | Recorte por pessoa: cabeça 3,5 vezes maior e sem distorção |
-| O rastreador perdia pessoas rodando a 3 quadros por segundo | Em t=24 s, havia 4 pessoas detectadas e só 2 rastreadas | Rastreamento em todos os quadros |
-| **Olhar para fora da imagem gruda na borda** | 34% dos picos ficavam a menos de 24 px da borda | Pico a menos de 32 px da borda conta como "fora da imagem" |
-| **Olhar sobre outras pessoas virava "atenção em prateleira"** | 25% dos olhares caíam sobre a silhueta de alguém | Alvo sobre uma pessoa não conta para nenhuma zona |
-| A mesma pessoa ganhava IDs novos | Trilhas que recomeçavam até 1,5 s depois, a menos de 150 px | Fragmentos unificados: 20 trilhas viraram 17 clientes |
-| A lente da câmera é desconhecida | Minimizar o resíduo do piso sempre escolhia o menor campo de visão | Campo de visão em que as gôndolas ficam a 90° do piso: 60° |
+| Squeezing the whole frame into 448×448 blinds the model | A 58 px head reached the model at about 13×23 px | Per-person crop: head 3.5 times larger and undistorted |
+| The tracker lost people when running at 3 frames per second | At t=24 s, 4 people were detected but only 2 tracked | Tracking on every frame |
+| **Gaze leaving the image sticks to the edge** | 34% of peaks were less than 24 px from the edge | A peak less than 32 px from the edge counts as "out of frame" |
+| **Gaze landing on other people became "shelf attention"** | 25% of gazes fell on someone's silhouette | A target on a person counts toward no zone |
+| The same person got new IDs | Tracks restarting up to 1.5 s later, less than 150 px away | Fragments merged: 20 tracks became 17 shoppers |
+| The camera lens is unknown | Minimizing the floor residual always picked the narrowest field of view | Field of view where the shelves stand at 90° to the floor: 60° |
 
-Sem as regras de borda e de pessoas, o ranking apontava "Óculos" com 77 s e 36%, um resultado falso.
+Without the edge and people rules, the ranking showed "Sunglasses" with 77 s and 36%, a false result.
 
-## Reproduzir
+## Reproduce
 
-Requisitos: Python 3.13, FFmpeg, cerca de 10 GB livres. Testado num Mac M2 Pro com 16 GB (aceleração MPS).
+Requirements: Python 3.13, FFmpeg, about 10 GB free. Tested on a Mac M2 Pro with 16 GB (MPS acceleration).
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
-# vídeo de origem (demonstração pública da câmera ACTi E43A)
+# source video (public demo of the ACTi E43A camera)
 .venv/bin/yt-dlp -f "bv*[height<=1080][ext=mp4]+ba[ext=m4a]" \
     -o "data/videos/youtube/yt_%(id)s.%(ext)s" "https://www.youtube.com/watch?v=-1bRhYjw1qE"
 
-# simulação simples (configuração recomendada)
+# simple simulation (recommended settings)
 cd scripts
 ../.venv/bin/python gaze_sim_v2.py ../data/videos/youtube/yt_-1bRhYjw1qE.mp4 ../outputs/v2 \
     --crop --model gazelle_dinov2_vitl14_inout --smooth 0.5 --suppress-self --track-every-frame --max-seconds 60
 ```
 
-O vídeo completo (extração, zonas, profundidade, render e trilha) tem o passo a passo em [`docs/experiments/2026-10-14-promo-v2.md`](docs/experiments/2026-10-14-promo-v2.md). As zonas desenhadas para essa câmera estão em [`config/zones_acti.json`](config/zones_acti.json).
+The step by step for the full video (extraction, zones, depth, render and soundtrack) is in [`docs/experiments/2026-10-14-promo-v2.md`](docs/experiments/2026-10-14-promo-v2.md) (in Portuguese). The zones drawn for this camera are in [`config/zones_acti.json`](config/zones_acti.json).
 
-## Estrutura
+## Structure
 
 ```
 scripts/
-  gaze_sim.py          v1: Gaze-LLE no quadro inteiro
-  gaze_sim_v2.py       v2: recorte por pessoa, ViT-L, suavização
-  promo/               pipeline do vídeo de demonstração
-    extract_v2.py      pose, silhuetas e olhar por quadro
-    depth.py           profundidade métrica + campo de visão
-    render_promo.py    regras de atenção + composição do vídeo
-    audio.py           trilha sonora sintetizada
-config/zones_acti.json zonas da loja (polígonos)
+  gaze_sim.py          v1: Gaze-LLE on the whole frame
+  gaze_sim_v2.py       v2: per-person crop, ViT-L, smoothing
+  promo/               demo video pipeline
+    extract_v2.py      pose, silhouettes and gaze per frame
+    depth.py           metric depth + field of view
+    render_promo.py    attention rules + video composition
+    audio.py           synthesized soundtrack
+config/zones_acti.json store zones (polygons)
 docs/
-  arquitetura.md       infraestrutura, fluxo, bibliotecas e licenças
-  research.md          modelos, datasets e projetos de referência
-  experiments/         uma página por rodada, com números e aprendizados
-data/videos/SOURCES.md fonte e licença de cada vídeo de teste
+  arquitetura.md       infrastructure, flow, libraries and licenses
+  research.md          models, datasets and reference projects
+  experiments/         one page per run, with numbers and learnings
+data/videos/SOURCES.md source and license of each test video
 ```
 
-Os vídeos, os dados extraídos e as saídas ficam fora do git (veja `.gitignore`) e são gerados localmente.
+Videos, extracted data and outputs are kept out of git (see `.gitignore`) and are generated locally.
 
-## Limitações
+## Limitations
 
-- **Sem gabarito:** a acurácia não foi medida contra anotações manuais. A melhora entre versões foi avaliada a olho e por métricas indiretas.
-- **O 3D vem de uma única imagem.** É a superfície vista de um ponto só, por isso a órbita da câmera virtual é pequena.
-- As zonas e a região da equipe foram **desenhadas à mão** para esta câmera.
-- **Não é tempo real:** cerca de 3 quadros por segundo num M2 Pro.
+- **No ground truth:** accuracy was not measured against manual annotations. Improvement between versions was judged by eye and through indirect metrics.
+- **The 3D comes from a single image.** It is the surface seen from one viewpoint, so the virtual camera's orbit is small.
+- The zones and the staff area were **drawn by hand** for this camera.
+- **Not real time:** about 3 frames per second on an M2 Pro.
 
-## Créditos e licenças
+## Credits and licenses
 
-O código do BrandPose está sob a [licença MIT](LICENSE). As bibliotecas, os pesos dos modelos e as imagens de terceiros mantêm as próprias licenças, listadas em [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+BrandPose's code is released under the [MIT License](LICENSE). Third-party libraries, model weights and footage keep their own licenses, listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-- Imagens do vídeo: demonstração pública da câmera ACTi E43A, [no YouTube](https://www.youtube.com/watch?v=-1bRhYjw1qE). Os direitos das imagens são da ACTi Corporation.
-- [Gaze-LLE](https://github.com/fkryan/gazelle) (MIT) e [DINOv2](https://github.com/facebookresearch/dinov2) (Apache-2.0).
+- Video footage: public demo of the ACTi E43A camera, [on YouTube](https://www.youtube.com/watch?v=-1bRhYjw1qE). Footage © ACTi Corporation.
+- [Gaze-LLE](https://github.com/fkryan/gazelle) (MIT) and [DINOv2](https://github.com/facebookresearch/dinov2) (Apache-2.0).
 - [Ultralytics YOLO11](https://github.com/ultralytics/ultralytics) (**AGPL-3.0**).
-- [Depth Anything V2](https://github.com/DepthAnything/Depth-Anything-V2) Metric Indoor Base (os pesos Base são **CC-BY-NC-4.0**, uso não comercial).
-- Lista completa em [`docs/arquitetura.md`](docs/arquitetura.md#8-licenças-e-direitos-atenção-para-uso-comercial).
+- [Depth Anything V2](https://github.com/DepthAnything/Depth-Anything-V2) Metric Indoor Base (the Base weights are **CC-BY-NC-4.0**, non-commercial use).
+- Full list in [`docs/arquitetura.md`](docs/arquitetura.md#8-licenças-e-direitos-atenção-para-uso-comercial) (in Portuguese).
