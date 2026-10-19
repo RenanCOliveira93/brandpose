@@ -1,6 +1,6 @@
 # Arquitetura do BrandPose: infraestrutura, fluxo e bibliotecas
 
-Este documento descreve onde o estudo roda, que bibliotecas e modelos usa e como cada etapa transforma os dados, do vídeo bruto ao relatório e ao vídeo promocional. Estado em 14/10/2026.
+Este documento descreve onde o estudo roda, que bibliotecas e modelos usa e como cada etapa transforma os dados, do vídeo bruto ao relatório, ao vídeo promocional e à loja em 3D. Estado em 18/10/2026.
 
 Os resultados de cada rodada estão em `docs/experiments/`. As referências e alternativas estão em `docs/research.md`.
 
@@ -21,6 +21,8 @@ flowchart LR
     RENDER --> AUDIO["audio.py<br/>trilha sintetizada"]
     RENDER --> FINAL["brandpose_promo.mp4"]
     AUDIO --> FINAL
+    DATA --> BL["blender/ · calib.py, store.py, pov.py<br/>loja em 3D + visão de um cliente"]
+    BL --> POV["pov_pt_lado_a_lado.mp4"]
 ```
 
 Em uma frase: **YOLO11** acha e acompanha as pessoas, **Gaze-LLE** estima para onde cada uma olha, regras próprias transformam isso em atenção por zona, e **OpenCV/NumPy/Pillow** desenham o resultado, que o **FFmpeg** codifica.
@@ -45,11 +47,24 @@ BrandPose/
 ├── scripts/
 │   ├── gaze_sim.py           # v1: Gaze-LLE no quadro inteiro
 │   ├── gaze_sim_v2.py        # v2: recorte por pessoa, ViT-L, suavização
-│   └── promo/
-│       ├── extract_v2.py     # dados por quadro (pose, silhueta, olhar)
-│       ├── depth.py          # profundidade métrica + campo de visão
-│       ├── render_promo.py   # regras de atenção + composição do vídeo
-│       └── audio.py          # trilha sonora sintetizada
+│   ├── promo/
+│   │   ├── extract_v2.py     # dados por quadro (pose, silhueta, olhar)
+│   │   ├── depth.py          # profundidade métrica + campo de visão
+│   │   ├── render_promo.py   # regras de atenção + composição do vídeo
+│   │   └── audio.py          # trilha sonora sintetizada
+│   └── blender/              # loja em 3D e a visão de um cliente (seção 5.5)
+│       ├── calib.py          # câmera + móveis ajustados aos cantos marcados
+│       ├── layout.py         # planta, zonas e geometria dos móveis
+│       ├── overlay.py        # móveis ajustados sobre a foto (conferência)
+│       ├── trajectories.py   # pé e raio do olhar por pessoa e quadro
+│       ├── store.py          # monta a loja no Blender e renderiza vistas
+│       ├── warp.py           # aplica a lente ao render, para comparar com a foto
+│       ├── pov.py            # câmera subjetiva de um cliente
+│       ├── compose.py        # vídeos lado a lado e da visão dele
+│       ├── shots.py          # tomadas 3D do vídeo para o LinkedIn
+│       ├── promo.py          # vídeo vertical para o LinkedIn (4:5)
+│       └── promo_audio.py    # trilha sintetizada do vídeo para o LinkedIn
+├── config/                   # zonas, câmera calibrada e móveis da cena da ACTi
 ├── data/
 │   ├── videos/               # vídeos de base (SOURCES.md com fonte e licença)
 │   └── datasets/             # MERL Shopping
@@ -72,10 +87,11 @@ Versões instaladas em `.venv` (fixadas em `requirements.txt`).
 | **transformers** | 5.19.0 | Carrega e roda o Depth Anything V2 | `depth.py` | Apache-2.0 |
 | **opencv-python** | 5.0.0.93 | Leitura de vídeo, redimensionamento, desfoque, Canny, desenho, rotação (Rodrigues) | todos | Apache-2.0 |
 | **numpy** | 2.5.4 | Arrays, mapas de calor, nuvem de pontos e z-buffer | todos | BSD-3 |
-| **scipy** | 1.18.1 | Distância às zonas (`ndimage`), filtros e reverberação do áudio, WAV | `render_promo.py`, `audio.py` | BSD-3 |
+| **scipy** | 1.18.1 | Distância às zonas (`ndimage`), filtros e reverberação do áudio, WAV, ajuste da câmera (`least_squares`) | `render_promo.py`, `audio.py`, `calib.py` | BSD-3 |
 | **pillow** | 12.3.0 | Recortes para o Gaze-LLE e texto e interface do vídeo | todos | MIT-CMU |
 | **yt-dlp** | 2026.8.19 | Baixa os vídeos do YouTube e do Instagram | aquisição | Unlicense |
-| **FFmpeg** (binário) | 7.1 | Mediana da imagem limpa, codificação H.264, mux do áudio AAC | shell e `render_promo.py` | LGPL/GPL (libx264 é GPL) |
+| **FFmpeg** (binário) | 7.1 | Mediana da imagem limpa, codificação H.264, mux do áudio AAC | shell, `render_promo.py` e `compose.py` | LGPL/GPL (libx264 é GPL) |
+| **Blender** (aplicativo) | 5.2.2 LTS | Monta a loja em 3D e renderiza com o Cycles na GPU (Metal). Roda os scripts com o Python dele, que traz o NumPy | `store.py`, `pov.py` | GPL-2.0-or-later |
 
 `huggingface_hub`, `safetensors` e `tokenizers` vêm junto com o `transformers`.
 
@@ -216,6 +232,37 @@ Tudo é sintetizado com NumPy e SciPy e sincronizado pelo `timeline.json`: pads 
 #### Etapa 7: mux
 O `ffmpeg` junta o vídeo e o AAC de 192 kbps. Saem duas versões: cópia do vídeo em qualidade máxima (`_alta`) e uma recodificada com CRF 21 (versão padrão).
 
+### 5.5 Loja em 3D e visão de um cliente: `scripts/blender/`
+
+A loja é modelada no Blender sobre uma câmera calibrada, e uma câmera subjetiva refaz o que um cliente via. Parte dos dados do `extract_v2.py`. O método, os números e os comandos estão em `docs/experiments/2026-10-18-blender-pov.md`.
+
+```mermaid
+flowchart TD
+    PL["clean_plate.png"] -->|"49 pontos marcados à mão"| CA["calib.py<br/>scipy least_squares"]
+    TR["tracks.json"] -->|"66 pessoas como régua"| CA
+    CA --> CF["config/camera_acti.json<br/>config/layout_acti.json"]
+    TR --> TJ["trajectories.py<br/>pé no piso + raio do olhar"]
+    GZ["gaze.json"] --> TJ
+    CF --> TJ
+    CF --> ST["store.py (Blender)<br/>móveis gerados em código"]
+    TJ --> PV["pov.py (Blender)<br/>Cycles · 532 quadros 1280×720"]
+    ST --> PV
+    PV -->|"frames/ + pov_info.json"| CO["compose.py<br/>OpenCV + Pillow → libx264"]
+    CO --> MP4["pov_pt_lado_a_lado.mp4 (1920×1080)<br/>pov_pt_visao.mp4 · pov_pt_limpo.mp4"]
+```
+
+| Etapa | Transformação |
+|---|---|
+| `calib.py` | Câmera (altura, giro, inclinação, rolagem, distância focal e distorção radial k1) ajustada junto com as caixas de 13 móveis e as posições de 66 pessoas, com o nariz 1,49 m acima dos tornozelos. Resultado: câmera a 2,68 m, 57° de campo de visão e k1 = −0,318 |
+| `trajectories.py` | Para cada pessoa e quadro: pé no piso (tornozelos, nariz, centro da cabeça ou ombros, nessa ordem) e raio do olhar pelo pico do Gaze-LLE. Junta os números trocados pelo rastreador |
+| `store.py` | Gera os móveis em código (prateleiras, produtos, garrafas), uma placa por zona e o calor no piso. Renderiza a vista da CCTV (sem distorção), órbita, corredor e planta |
+| `warp.py` | Aplica a distorção da lente ao render da CCTV (`cv2.remap`), para comparar pixel a pixel com a foto |
+| `pov.py` | Câmera nos olhos do cliente: trajeto suavizado e afastado dos móveis, direção pelo olhar em 3D (raio da CCTV até a cena) e loja fechada com teto e vitrine. Cycles com 32 amostras e denoise |
+| `compose.py` | Lado a lado com a CCTV (linha do olhar projetada de volta pela câmera calibrada), visão com mira e nome da zona olhada, e visão limpa |
+| `shots.py` | Abre o `pov.blend` e renderiza em pé (1080×1350) as tomadas do vídeo para o LinkedIn: com o tempo congelado, a vista da CCTV e o voo até os olhos dele (165 quadros); depois a visão dele (336 quadros) e o mapa sem teto com o caminho e os olhares (225 quadros) |
+| `promo.py` | Vídeo vertical 4:5 (1080×1350) em sete cenas, em tela cheia e com texto grande por cima, para tocar sem som. Pillow para os textos, OpenCV para as transições (cortina, zoom, fusões) |
+| `promo_audio.py` | Trilha com os sintetizadores do `audio.py` num arranjo novo, sincronizada pelo `promo_pt_timeline.json`, e mux AAC com o `ffmpeg` |
+
 ## 6. Formatos de dados
 
 | Arquivo | Formato | Conteúdo |
@@ -229,6 +276,10 @@ O `ffmpeg` junta o vídeo e o AAC de 192 kbps. Saem duas versões: cópia do ví
 | `depth_info.json` | Campo de visão, normal e distância do piso, erro por campo de visão | Geometria da câmera |
 | `timeline.json` | Lista `[cena, início, fim]` | Sincronia da trilha |
 | `gaze_log.json` e `summary.json` (v1/v2) | Registro por pessoa e quadro, e totais | Saídas dos simuladores |
+| `config/camera_acti.json` | `{h, yaw, pitch, roll, f, k1, M[3][3]}` (metros, radianos, pixels) | Câmera calibrada. `M` tem os eixos direita, baixo e frente da câmera no mundo |
+| `config/layout_acti.json` | `{zona: {x, y, a, L, d, H}}` (metros e graus) | Caixa de cada móvel: início da face, direção, comprimento, profundidade e altura |
+| `trajectories.json` | `{fps, people: {id: [{frame, feet[2], src, gaze_ray[3], gaze_xy[2]}]}}` | Pé no piso e raio do olhar (quando há) por pessoa e quadro |
+| `pov_info.json` | Lista de `{frame, eye[3], target[3], zone}` | Olho, alvo e zona olhada da câmera subjetiva |
 
 ## 7. Tempos medidos (M2 Pro, MPS)
 
@@ -241,6 +292,13 @@ O `ffmpeg` junta o vídeo e o AAC de 192 kbps. Saem duas versões: cópia do ví
 | `extract_v2.py` | 1.810 quadros: pose + silhueta todo quadro, olhar a 10 por segundo | 518 s (0,29 s/quadro) |
 | `render_promo.py` | 1.329 quadros de saída (44,3 s) | 185 s |
 | `audio.py` | 44,3 s de áudio | 4 s |
+| `calib.py` | 13 móveis e 66 pessoas, partindo da calibração atual | 25 s (do zero: 43 min, e cai num mínimo local pior) |
+| `trajectories.py` | 1.810 quadros, todas as pessoas | 1 s |
+| `store.py` | 4 vistas, Cycles com 160 amostras na GPU (Metal) | 2 min 18 s |
+| `pov.py` | 532 quadros de 1280×720, Cycles com 32 amostras na GPU (Metal) | 71 min (8 s/quadro) |
+| `compose.py` | 532 quadros, três vídeos | 35 s |
+| `shots.py` | 1 quadro da CCTV + 187 do voo + 336 da visão + 225 do mapa, em 1080×1350, Cycles com 32 amostras na GPU (Metal) | 132 min (11 s/quadro) |
+| `promo.py` + `promo_audio.py` | 1.139 quadros de 1080×1350 e a trilha | 88 s |
 
 ## 8. Licenças e direitos (atenção para uso comercial)
 
@@ -250,6 +308,7 @@ O `ffmpeg` junta o vídeo e o AAC de 192 kbps. Saem duas versões: cópia do ví
 | Depth Anything V2 Metric Indoor **Base** | Não declarada. Os pesos Base são **CC-BY-NC-4.0** (não comercial). A variante **Small** é Apache-2.0 |
 | Gaze-LLE, DINOv2, PyTorch, OpenCV, NumPy, SciPy, transformers, timm | Permissivas (MIT, Apache-2.0, BSD) |
 | Vídeo da ACTi (YouTube) | Copyright da ACTi. Só para estudo local |
+| Blender | GPL-2.0-or-later. `store.py` e `pov.py` rodam dentro dele e usam a API Python (`bpy`). O Blender não é distribuído aqui, e a licença MIT é compatível com a GPL |
 | MERL Shopping | Pesquisa e educação |
 | Mixkit e Pexels | Licenças gratuitas dos sites (veja `data/videos/SOURCES.md`) |
 | Fontes do vídeo (Avenir Next, Menlo, DIN Condensed) | Fontes do sistema macOS. Para peça comercial, confirme a licença de uso em vídeo |
@@ -278,3 +337,17 @@ ffmpeg -i $D/brandpose_promo_mudo.mp4 -i $D/trilha.wav -map 0:v -map 1:a \
 ```
 
 A imagem limpa (`clean_plate.png`) é gerada antes do `depth.py`, com a mediana de `ffmpeg -vf fps=1.5`. Os passos estão em `docs/experiments/2026-10-14-promo-v2.md`.
+
+A loja em 3D e a visão do cliente (Blender 5.2), a partir da raiz do repositório:
+
+```bash
+D=outputs/2026-10-14-promo-v2/data
+R=outputs/2026-10-18-blender-pov
+BLENDER=/Applications/Blender.app/Contents/MacOS/Blender
+.venv/bin/python scripts/blender/trajectories.py $D $R
+$BLENDER -b --python scripts/blender/store.py -- $R
+$BLENDER -b --python scripts/blender/pov.py -- $R
+.venv/bin/python scripts/blender/compose.py $D $R
+```
+
+A calibração já está em `config/`. Os passos opcionais (refazer a calibração e conferir com a foto) estão em `docs/experiments/2026-10-18-blender-pov.md`.

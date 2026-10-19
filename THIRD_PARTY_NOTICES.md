@@ -49,12 +49,24 @@ Small variant (Apache-2.0) or another model.
 | DINOv2 backbone (used by Gaze-LLE) | [facebookresearch/dinov2](https://github.com/facebookresearch/dinov2) | Apache-2.0 |
 | Depth Anything V2 Metric Indoor Base | [DepthAnything/Depth-Anything-V2](https://github.com/DepthAnything/Depth-Anything-V2) | **CC-BY-NC-4.0** |
 
+## Tools
+
+| Tool | Use | License |
+|---|---|---|
+| [Blender](https://www.blender.org) 5.2 | `scripts/blender/store.py` and `pov.py` run inside Blender and use its Python API (`bpy`) to model the store and render it | GPL-2.0-or-later |
+| [FFmpeg](https://ffmpeg.org) | Video encoding (H.264 via libx264) | LGPL/GPL |
+
+Both are installed separately and are not distributed with this repository.
+The MIT License is compatible with the GPL.
+
 ## Images and videos
 
-- The images in `docs/img/` and the demo video are derived from a public
-  demonstration of the ACTi E43A camera
+- The images in `docs/img/`, the demo video and the shopper's-view video are
+  derived from a public demonstration of the ACTi E43A camera
   ([YouTube](https://www.youtube.com/watch?v=-1bRhYjw1qE)). The footage is
-  copyright ACTi Corporation and is **not** covered by the MIT License.
+  copyright ACTi Corporation and is **not** covered by the MIT License. The
+  Blender renders are original, but the paths and gazes in them were
+  estimated from that footage.
 - Test videos from Mixkit, Pexels and the MERL Shopping dataset are not
   included in this repository and keep their own licenses. See
   [`data/videos/SOURCES.md`](data/videos/SOURCES.md).

@@ -65,8 +65,28 @@ O detalhe de cada etapa, com bibliotecas, versões, formatos e tempos, está em 
 | **Olhar sobre outras pessoas virava "atenção em prateleira"** | 25% dos olhares caíam sobre a silhueta de alguém | Alvo sobre uma pessoa não conta para nenhuma zona |
 | A mesma pessoa ganhava IDs novos | Trilhas que recomeçavam até 1,5 s depois, a menos de 150 px | Fragmentos unificados: 20 trilhas viraram 17 clientes |
 | A lente da câmera é desconhecida | Minimizar o resíduo do piso sempre escolhia o menor campo de visão | Campo de visão em que as gôndolas ficam a 90° do piso: 60° |
+| A profundidade métrica encolhia a loja | No 3D da profundidade, a câmera ficava a 2,04 m e as gôndolas tinham de 0,7 a 1,0 m | Câmera calibrada com cantos marcados e as pessoas como régua: 2,68 m de altura, 57° de campo de visão e distorção de barril |
 
 Sem as regras de borda e de pessoas, o ranking apontava "Óculos" com 77 s e 36%, um resultado falso.
+
+## Pelos olhos do cliente: a loja em 3D
+
+Com os mesmos dados (pessoas rastreadas quadro a quadro e o olhar estimado), reconstruí a loja no Blender e renderizei o que um cliente via: o rapaz de jaqueta azul que entra aos 17 s.
+
+🎬 **A visão do cliente (18 s):** [assista no YouTube](https://youtu.be/ABeKpyzMcf8)
+
+[![Assista à visão do cliente no YouTube](docs/img/pov_play.jpg)](https://youtu.be/ABeKpyzMcf8)
+
+| Câmera real e modelo 3D, pela mesma câmera calibrada | A loja modelada no Blender | A visão dele, quadro a quadro |
+|---|---|---|
+| ![Imagem da câmera de segurança ao lado do render do Blender do mesmo ponto de vista](docs/img/blender_cctv.jpg) | ![A loja modelada no Blender, com uma placa por zona](docs/img/blender_loja.jpg) | ![A visão do cliente dentro da loja em 3D](docs/img/blender_pov.jpg) |
+
+1. **Calibração:** marquei os cantos de cada móvel na imagem da loja vazia. A câmera (altura, ângulos, distância focal e distorção da lente) é ajustada junto com a posição e o tamanho de cada móvel, por mínimos quadrados. As pessoas são a régua: o nariz fica cerca de 1,49 m acima do tornozelo.
+2. **Modelagem:** cada móvel vira um modelo no Blender (gôndolas, geladeiras, racks e balcão) onde a calibração o colocou, com uma placa com a zona e a fatia de atenção dela. Produtos, paredes e luzes são genéricos.
+3. **Trajeto e olhar:** os pés de cada pessoa saem do esqueleto, pela câmera calibrada. O olhar vira um raio da câmera de segurança pelo pico do Gaze-LLE, e o ponto onde ele bate na loja em 3D é para onde a pessoa olha.
+4. **A câmera dele:** olhos a 1,62 m, apontando para onde aponta o olhar suavizado (para onde ele anda, quando falta olhar), renderizada no Cycles: 532 quadros em 1280×720, cerca de 8 s por quadro num M2 Pro.
+
+Os scripts estão em [`scripts/blender/`](scripts/blender/). O método, os números e as limitações estão em [`docs/experiments/2026-10-18-blender-pov.md`](docs/experiments/2026-10-18-blender-pov.md).
 
 ## Reproduzir
 
@@ -87,6 +107,8 @@ cd scripts
 
 O vídeo completo (extração, zonas, profundidade, render e trilha) tem o passo a passo em [`docs/experiments/2026-10-14-promo-v2.md`](docs/experiments/2026-10-14-promo-v2.md). As zonas desenhadas para essa câmera estão em [`config/zones_acti.json`](config/zones_acti.json).
 
+A loja em 3D e a visão do cliente partem dessa mesma extração e precisam também do [Blender](https://www.blender.org) 5.2. Os comandos estão em [`docs/experiments/2026-10-18-blender-pov.md`](docs/experiments/2026-10-18-blender-pov.md#rodar).
+
 ## Estrutura
 
 ```
@@ -98,7 +120,22 @@ scripts/
     depth.py           profundidade métrica + campo de visão
     render_promo.py    regras de atenção + composição do vídeo
     audio.py           trilha sonora sintetizada
-config/zones_acti.json zonas da loja (polígonos)
+  blender/             loja em 3D e a visão de um cliente (Blender)
+    calib.py           câmera + móveis ajustados aos cantos marcados na imagem
+    layout.py          planta da loja, zonas e geometria dos móveis
+    overlay.py         desenha os móveis ajustados sobre a imagem (conferência)
+    trajectories.py    pés e raio do olhar de cada pessoa, quadro a quadro
+    store.py           monta a loja no Blender e renderiza vistas
+    warp.py            aplica a distorção da lente para comparar com a imagem
+    pov.py             renderiza o que um cliente via
+    compose.py         vídeos lado a lado e da visão do cliente
+    shots.py           tomadas 3D do vídeo para o LinkedIn (Blender)
+    promo.py           vídeo vertical para o LinkedIn (4:5)
+    promo_audio.py     a trilha sintetizada dele
+config/
+  zones_acti.json      zonas da loja (polígonos)
+  camera_acti.json     câmera calibrada (calib.py)
+  layout_acti.json     móveis ajustados (calib.py)
 docs/
   arquitetura.md       infraestrutura, fluxo, bibliotecas e licenças
   research.md          modelos, datasets e projetos de referência
@@ -114,6 +151,7 @@ Os vídeos, os dados extraídos e as saídas ficam fora do git (veja `.gitignore
 - **O 3D vem de uma única imagem.** É a superfície vista de um ponto só, por isso a órbita da câmera virtual é pequena.
 - As zonas e a região da equipe foram **desenhadas à mão** para esta câmera.
 - **Não é tempo real:** cerca de 3 quadros por segundo num M2 Pro.
+- **A visão do cliente é uma reconstrução.** A posição dele erra cerca de 20 a 30 cm, os bonecos deslizam sem mexer as pernas, e teto, vitrine e produtos são inventados.
 
 ## Créditos e licenças
 
@@ -123,4 +161,5 @@ O código do BrandPose está sob a [licença MIT](LICENSE). As bibliotecas, os p
 - [Gaze-LLE](https://github.com/fkryan/gazelle) (MIT) e [DINOv2](https://github.com/facebookresearch/dinov2) (Apache-2.0).
 - [Ultralytics YOLO11](https://github.com/ultralytics/ultralytics) (**AGPL-3.0**).
 - [Depth Anything V2](https://github.com/DepthAnything/Depth-Anything-V2) Metric Indoor Base (os pesos Base são **CC-BY-NC-4.0**, uso não comercial).
+- [Blender](https://www.blender.org) (GPL-2.0-or-later), usado como ferramenta para modelar e renderizar a loja em 3D. Não é distribuído aqui.
 - Lista completa em [`docs/arquitetura.md`](docs/arquitetura.md#8-licenças-e-direitos-atenção-para-uso-comercial).
